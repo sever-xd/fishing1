@@ -1,0 +1,306 @@
+<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Рыбалка: симулятор</title>
+<style>
+:root{--bg:#0e1a24;--pn:#16293a;--tx:#e8f1f7;--ac:#f5b942;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:14px system-ui,sans-serif;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+#w{max-width:980px;margin:0 auto;padding:6px}
+#tb{display:flex;flex-wrap:wrap;gap:4px 14px;padding:6px 8px;background:var(--pn);border-radius:8px;font-size:13px}
+#sc{position:relative;aspect-ratio:16/9;margin:6px 0;border-radius:8px;overflow:hidden;background:#000}canvas{width:100%;height:100%;display:block;position:absolute;inset:0;touch-action:none}
+.row{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;align-items:center}
+button,select{background:#24425a;color:var(--tx);border:0;border-radius:8px;padding:9px 12px;font-size:14px}
+button:active{background:#336688}
+.big{flex:1;padding:16px;font-size:17px;font-weight:700;background:#c47f12;min-width:120px}
+#m{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;z-index:9}
+#mi{background:var(--pn);border-radius:12px;padding:14px;width:min(92vw,520px);max-height:80vh;overflow:auto}
+.it{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #fff2;gap:8px}
+small{opacity:.7}
+#js{position:absolute;left:12px;bottom:12px;width:96px;height:96px;border-radius:50%;background:#ffffff22;border:2px solid #ffffff55;z-index:3;touch-action:none}
+#kn{position:absolute;left:28px;top:28px;width:40px;height:40px;border-radius:50%;background:#ffffffaa;pointer-events:none}
+.ob{background:#0008;border:2px solid #fff5;color:#fff;border-radius:12px;padding:0;z-index:3;touch-action:none}
+#fsb,#mnb{position:absolute;top:8px;right:8px;width:38px;height:38px;font-size:18px}
+#mnb{right:54px;display:none}body.fs #mnb{display:block}
+#ab{position:absolute;right:10px;bottom:10px;display:flex;gap:8px;align-items:flex-end;z-index:3}
+#ab .ob{height:56px;min-width:56px;font-size:12px;font-weight:700}
+#mb2{min-width:100px;height:72px!important;background:#c47f12cc;font-size:14px}
+body.fs{overflow:hidden}body.fs #w{max-width:none;padding:0}
+body.fs #sc{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(100vw,177.78vh);margin:0;border-radius:0;z-index:1}
+body.fs #rows{display:none}
+body.fs.menu #rows{display:block;position:fixed;left:0;right:0;bottom:0;z-index:6;background:#0e1a24ee;padding:6px}
+body.fs #tb{position:fixed;top:0;left:0;z-index:3;font-size:11px;padding:3px 6px;max-width:55vw;border-radius:0 0 8px 0;opacity:.85}
+</style></head><body><div id="w">
+<div id="tb"></div>
+<div id="sc"><canvas id="c3" width="960" height="540"></canvas><canvas id="c" width="960" height="540"></canvas><div id="js"><div id="kn"></div></div><button id="fsb" class="ob">⛶</button><button id="mnb" class="ob">☰</button><div id="ab"><button id="pd2" class="ob">📡</button><button id="pb2" class="ob">ПОДТЯГ</button><button id="mb2" class="ob">ЗАБРОС</button></div></div>
+<div id="rows"><div class="row"><button class="big" id="mb">ЗАБРОС</button><button class="big" id="pb" style="background:#2a7a8a">ПОДТЯГ</button></div>
+<div class="row">
+<button id="d1">Глубина −</button><button id="d2">Глубина +</button>
+<button id="f1">Фрикцион −</button><button id="f2">Фрикцион +</button>
+<select id="ks"></select><select id="bs"></select><button id="sb">🔊</button></div>
+<div class="row"><button id="lk">🖱 Мышь</button><button onclick="openM('adm')">⚙</button><input id="nm" placeholder="Ник" maxlength="14" style="width:80px;padding:9px;border-radius:8px;border:0;background:#24425a;color:#fff"><button id="pdb">📡 Род-под</button></div>
+<div class="row"><button onclick="openM('shop')">🛒 Магазин</button><button onclick="openM('net')">🐟 Садок</button><button onclick="openM('loc')">🗺 Места</button><button onclick="openM('rec')">🏆 Рекорды</button></div>
+<small>Джойстик / WASD — ходьба, свайп по экрану, правая кнопка мыши или C — обзор · Пробел — заброс (держи, отпусти) / подсечка / мотать · Shift — подтяг · ↑↓ глубина · Q/E фрикцион</small></div>
+</div>
+<div id="m" onclick="if(event.target==this)closeM()"><div id="mi"></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script><script>
+const $=i=>document.getElementById(i),R=(a,b)=>a+Math.random()*(b-a),cl=(v,a,b)=>Math.max(a,Math.min(b,v)),lp=(a,b,t)=>a+(b-a)*t;
+let S=null;try{S=JSON.parse(localStorage.getItem('rr4'))}catch(e){}
+S=Object.assign({money:300,xp:0,loc:0,inv:{w:10,m:5,b:5,c:5,l:1,v:0,g:0},rod:0,reel:0,line:0,net:0,keep:[],rec:{},bait:'w',qp:[0,0,0,0],qd:[0,0,0,0],spot:0,kit:'f',kits:{f:1},pod:0},S||{});
+const save=()=>{try{localStorage.setItem('rr4',JSON.stringify(S))}catch(e){}};
+const BAIT={w:['Червь',60,10],m:['Опарыш',50,10],b:['Хлеб',40,10],c:['Кукуруза',50,10],l:['Блесна',200,1],v:['Живец',90,5],g:['Прикормка',150,3],o:['Воблер',350,1],t:['Твистер',150,3],k:['Колебалка',250,1],y:['Бойл',120,10]};
+const LOCS=[['Пруд',4,1],['Река',6,3],['Озеро',10,6]];
+const WX=['Ясно','Облачно','Дождь'];
+const GEAR={rod:['Удилище',[['Бамбуковое',0,35,1],['Фидер',1500,50,1.3],['Карбон Elite',5000,65,1.7]]],
+reel:['Катушка',[['Простая',0,1],['Безынерционная',1200,1.4],['Pro',4000,1.9]]],
+line:['Леска',[['Леска 0,2',0,55],['Леска 0,3',800,80],['Плетёнка',3000,110]]],
+net:['Садок',[['Садок 20 кг',0,20],['Садок 50 кг',600,50],['Садок 120 кг',2500,120]]]};
+const FISH=[
+{n:'Плотва',a:.1,z:.6,p:80,d0:.1,d1:.6,b:'mwbc',pw:.3,r:10,l:[0,1,2],t:'d',c:'#c9d6dd'},
+{n:'Окунь',a:.1,z:1.2,p:120,d0:.2,d1:.8,b:'wmvl',pw:.5,r:8,l:[0,1,2],t:'p',c:'#6a8f3a'},
+{n:'Карась',a:.2,z:1.5,p:100,d0:.5,d1:1,b:'cbwm',pw:.4,r:8,l:[0,2],t:'d',c:'#d1a64a'},
+{n:'Лещ',a:.5,z:3,p:130,d0:.6,d1:1,b:'mwcb',pw:.6,r:6,l:[1,2],t:'d',c:'#a9aeb3'},
+{n:'Щука',a:1,z:9,p:180,d0:.2,d1:.7,b:'lv',pw:1.2,r:3,l:[0,1,2],t:'p',c:'#5f7d45'},
+{n:'Карп',a:1,z:12,p:160,d0:.6,d1:1,b:'cbw',pw:1.1,r:3,l:[0,2],t:'d',c:'#b5832e'},
+{n:'Судак',a:1,z:7,p:230,d0:.7,d1:1,b:'vl',pw:1,r:2,l:[1,2],t:'p',c:'#7e8a78'},
+{n:'Сом',a:5,z:40,p:200,d0:.8,d1:1,b:'vw',pw:2,r:1,l:[1,2],t:'n',c:'#4a4a42'},
+{n:'Линь',a:.3,z:2.5,p:140,d0:.7,d1:1,b:'wcm',pw:.5,r:5,l:[0,2],t:'d',c:'#5a7a3a'},
+{n:'Налим',a:.5,z:6,p:170,d0:.85,d1:1,b:'wv',pw:.9,r:2,l:[1,2],t:'n',c:'#6b5a3a'},
+{n:'Жерех',a:.8,z:5,p:210,d0:.05,d1:.4,b:'lv',pw:1.3,r:2,l:[1],t:'p',c:'#9aa7b0'},
+{n:'Золотой карп',a:6,z:20,p:600,d0:.7,d1:1,b:'cb',pw:1.5,r:.4,l:[0,2],t:'d',c:'#f0b020'}];
+const W=960,H=540,WY=230,PXM=250,SX=150;
+const cv=$('c'),x=cv.getContext('2d');
+let AC=null,mute=false,rip=[];
+const LU='lotk',KITS={f:['Поплавочная',0,1],s:['Спиннинг',2000,1.15],d:['Донка',1800,1.25]};
+const SPOTS=[['Мостки',{d:1,p:1,n:1}],['Камыши',{d:1.4,p:1.2,n:.8}],['Яма',{d:.9,p:1,n:1.5}],['Коряжник',{d:.8,p:1.6,n:1}]];
+const isL=()=>LU.includes(S.bait),edf=()=>S.kit=='d'?ldep(g.d)-.1:Math.min(g.dep,ldep(g.d)-.1);
+const pod={on:0,d:25,B:'w',t:0,bite:0,bt:0,fish:null,al:0};
+function podUp(dt){if(!pod.on)return;if(!pod.bite){pod.t-=dt;if(pod.t<=0){const f=pickFish(pod.B,ldep(pod.d)-.1);if(!f)pod.t=R(6,12);else{pod.fish=f;pod.bite=1;pod.bt=0}}}
+ else{pod.bt+=dt;pod.al-=dt;if(pod.al<=0){pod.al=.7;snd(1200,.12,'triangle',.07);addRip(X(pod.d),{x:pod.px,z:pod.pz,dx:pod.dx,dz:pod.dz})}
+  if(pod.bt>6){pod.on=0;pod.bite=0;S.inv[pod.B]=Math.max(0,(S.inv[pod.B]||0)-1);refreshBaits();say('Рыба сорвалась с род-пода');save()}}}
+function podBtn(){if(!S.pod){say('Купи род-под в магазине');return}
+ if(pod.bite){if(Math.hypot(P.x-pod.px,P.z-pod.pz)>6){say('Подойди к род-поду (до 6 м)');return}if(g.st!='idle'){say('Сначала закончи с основной удочкой');return}S.inv[pod.B]=Math.max(0,(S.inv[pod.B]||0)-1);refreshBaits();g.fish=pod.fish;g.d=pod.d;g.px=pod.px;g.pz=pod.pz;g.cdx=pod.dx;g.cdz=pod.dz;g.ed=ldep(pod.d)-.1;g.T=20;g.slack=0;g.snap=0;g.st='fight';pod.on=0;pod.bite=0;say('Подсёк на род-поде!');snd(350,.15,'square',.06);return}
+ if(pod.on){if(Math.hypot(P.x-pod.px,P.z-pod.pz)>6){say('Подойди к род-поду (до 6 м)');return}pod.on=0;say('Род-под смотан');return}
+ if(isL()||(S.inv[S.bait]||0)<=0){say('Для род-пода нужна наживка (не блесна)');return}
+ const sa=Math.sin(P.yaw),ca=Math.cos(P.yaw);pod.dx=-sa;pod.dz=-ca;pod.px=P.x+ca*.9-sa*.3;pod.pz=P.z-sa*.9-ca*.3;pod.d=waterDist(pod.px,pod.pz,pod.dx,pod.dz,R(22,45));if(pod.d<4){say('Закидывай в воду!');return}pod.on=1;pod.B=S.bait;pod.t=R(5,14)/(g.gT>0?1.4:1);say('Род-под заброшен ('+Math.round(pod.d)+' м)');snd(500,.3,'sine',.05,150);addRip(X(pod.d),{x:pod.px,z:pod.pz,dx:pod.dx,dz:pod.dz})}
+function walk(dir){if(g.st!='idle'||g.walkT>0)return;if(pod.on){say('Сначала смотай род-под');return}S.spot=(S.spot+dir+SPOTS.length)%SPOTS.length;g.walkT=1.2;g.wdir=dir;g.d=0;save();say('Идём на место: '+SPOTS[S.spot][0])}
+function refreshKits(){$('ks').innerHTML=Object.keys(KITS).filter(k=>S.kits[k]).map(k=>`<option value="${k}" ${S.kit==k?'selected':''}>${KITS[k][0]}</option>`).join('')}
+function buyKit(k){const p=KITS[k][1];if(S.money<p)return;S.money-=p;S.kits[k]=1;save();refreshKits();openM()}
+function buyPod(){if(S.money<2500)return;S.money-=2500;S.pod=1;save();openM()}
+const T=window.THREE,P={x:0,z:1,yaw:0,pitch:-.05,bob:0},keys={},HK={},NAME='Рыбак'+Math.floor(R(100,999));
+let rd,sc3,cam,sunL,hemi,water,bob,lineG,rodG,tip,fishM,sunM,moonM,podG,podB,podLn,podTip,rr=[],ws=null,others={},acc=0,lookD=0;const tv=T?new T.Vector3():null;
+const inW=(a,b)=>(a/90)**2+((b+70)/65)**2<1,onPier=(a,b)=>Math.abs(a)<1.2&&b<3&&b>-12;
+const spotAt=()=>{const a=Math.atan2(P.x,P.z+70);return Math.abs(a)<.785?0:a>=.785&&a<2.356?1:Math.abs(a)>=2.356?2:3};
+function waterDist(px,pz,dx,dz,w){for(let d=Math.floor(w);d>=4;d--)if(inW(px+dx*d,pz+dz*d))return d;return 0}
+function bobPos(){if(g.st=='idle'||g.st=='charge'||g.st=='show'||g.cdx===undefined)return null;return[g.px+g.cdx*g.d,g.pz+g.cdz*g.d]}
+function addRip3(x,z){if(!sc3||!inW(x,z))return;const m=new T.Mesh(new T.RingGeometry(.3,.4,24),new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.7,side:T.DoubleSide}));m.rotation.x=-Math.PI/2;m.position.set(x,.08,z);sc3.add(m);rr.push({m,t0:g.time})}
+const addRip=(px,o)=>{const d=(px-SX)/9.75;o=o||{x:g.px,z:g.pz,dx:g.cdx,dz:g.cdz};addRip3(o.x+o.dx*d,o.z+o.dz*d)};
+function init3d(){if(!T)return;rd=new T.WebGLRenderer({canvas:$('c3'),antialias:true});rd.setSize(960,540,false);sc3=new T.Scene();sc3.background=new T.Color(0x87ceeb);sc3.fog=new T.Fog(0x87ceeb,60,380);
+ cam=new T.PerspectiveCamera(70,16/9,.05,700);sc3.add(cam);hemi=new T.HemisphereLight(0xffffff,0x334422,.9);sc3.add(hemi);sunL=new T.DirectionalLight(0xffffff,.8);sunL.position.set(60,100,-40);sc3.add(sunL);
+ const M=c=>new T.MeshLambertMaterial({color:c}),mesh=(gm,m,x,y,z)=>{const o=new T.Mesh(gm,m);o.position.set(x,y,z);sc3.add(o);return o};
+ mesh(new T.PlaneGeometry(900,900),M(0x4a7c3a),0,0,0).rotation.x=-Math.PI/2;
+ const sd=mesh(new T.CircleGeometry(1,48),M(0xc9b27a),0,.02,-70);sd.rotation.x=-Math.PI/2;sd.scale.set(95,70,1);
+ water=mesh(new T.CircleGeometry(1,64),new T.MeshLambertMaterial({color:0x2a6f9a,transparent:true,opacity:.9}),0,.05,-70);water.rotation.x=-Math.PI/2;water.scale.set(90,65,1);
+ mesh(new T.BoxGeometry(2.4,.12,15),M(0x8a6a3a),0,.35,-4.5);for(let i=0;i<6;i++)for(const sx of[-1.1,1.1])mesh(new T.CylinderGeometry(.08,.08,.8,6),M(0x5a3a1a),sx,.1,-11+i*2.5);
+ for(let i=0;i<90;i++){const a=R(-180,180),b=R(-180,180);if(inW(a/1.2,(b+70)/1.2-70+0)||(Math.abs(a)<10&&b>-14&&b<14))continue;mesh(new T.CylinderGeometry(.3,.4,3,6),M(0x5a3a1a),a,1.5,b);mesh(new T.ConeGeometry(2.2,6,7),M(0x2f6a30),a,5.5,b)}
+ for(let a=.9;a<2.2;a+=.06)for(let j=0;j<3;j++)mesh(new T.CylinderGeometry(.04,.04,2.2,4),M(0x6a8a3a),88*Math.sin(a)+R(-1,1),1.1,-70+63*Math.cos(a)+R(-1,1));
+ for(let a=-2.2;a<-.9;a+=.35){const l=mesh(new T.BoxGeometry(5,.5,.5),M(0x5a4023),-86*Math.sin(-a),.1,-70+62*Math.cos(a));l.rotation.y=R(0,3)}
+ sunM=mesh(new T.SphereGeometry(10),new T.MeshBasicMaterial({color:0xffee88,fog:false}),0,0,0);moonM=mesh(new T.SphereGeometry(7),new T.MeshBasicMaterial({color:0xe0e8ff,fog:false}),0,0,0);
+ bob=new T.Group();const b1=new T.Mesh(new T.SphereGeometry(.1,8,6),new T.MeshBasicMaterial({color:0xff2222}));b1.position.y=.08;const b2=new T.Mesh(new T.CylinderGeometry(.015,.015,.3,4),new T.MeshBasicMaterial({color:0xffffff}));b2.position.y=.25;bob.add(b1,b2);sc3.add(bob);
+ lineG=new T.Line(new T.BufferGeometry().setFromPoints([...Array(12)].map(()=>new T.Vector3())),new T.LineBasicMaterial({color:0xffffff}));lineG.frustumCulled=false;sc3.add(lineG);
+ rodG=new T.Group();rodG.position.set(.28,-.32,-.35);const rm=new T.Mesh(new T.CylinderGeometry(.008,.022,2.2,6),M(0x2a1a0a));rm.rotation.x=-Math.PI/2;rm.position.z=-1.1;rodG.add(rm);tip=new T.Object3D();tip.position.set(0,0,-2.2);rodG.add(tip);cam.add(rodG);
+ fishM=new T.Mesh(new T.SphereGeometry(1,10,8),M(0xaaaaaa));fishM.visible=false;sc3.add(fishM);
+ podG=new T.Group();const pl=new T.Mesh(new T.CylinderGeometry(.03,.03,1,5),M(0x888888));pl.position.y=.5;const pr=new T.Mesh(new T.CylinderGeometry(.01,.02,2.4,5),M(0x2a1a0a));pr.rotation.x=-Math.PI/2+.3;pr.position.set(0,1.1,-1.1);podTip=new T.Object3D();podTip.position.set(0,1.4,-2.2);podG.add(pl,pr,podTip);podG.visible=false;sc3.add(podG);
+ podB=new T.Mesh(new T.SphereGeometry(.1,8,6),new T.MeshBasicMaterial({color:0xffdd22}));podB.visible=false;sc3.add(podB);
+ podLn=new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(),new T.Vector3()]),new T.LineBasicMaterial({color:0xffffff}));podLn.frustumCulled=false;podLn.visible=false;sc3.add(podLn)}
+function render3d(){if(!rd)return;const h=g.hour,k=cl(Math.sin((h-6)/12*Math.PI)*1.6+.2,0,1),gy=1-g.wx*.15;
+ sc3.background.setRGB(lp(.03,.5,k)*gy,lp(.05,.78,k)*gy,lp(.15,.92,k)*gy);sc3.fog.color.copy(sc3.background);
+ hemi.intensity=.25+k*.7;sunL.intensity=k*.9;water.material.color.setRGB(.1*(.3+k),.42*(.3+k),.6*(.3+k));
+ const ta=(h-6)/12*Math.PI;sunM.position.set(250*Math.cos(ta),250*Math.sin(ta),-250);moonM.position.set(-250*Math.cos(ta),-250*Math.sin(ta),-250);
+ cam.position.set(P.x,1.7+(onPier(P.x,P.z)?.35:0)+Math.sin(P.bob)*.03,P.z);cam.rotation.set(P.pitch,P.yaw,0,'YXZ');
+ rodG.rotation.x=.45+(g.st=='charge'?g.pw*.6:0)+g.T*.004+(g.pump&&g.st=='fight'?.3:0);
+ cam.updateMatrixWorld(true);tip.getWorldPosition(tv);
+ const bp=bobPos();
+ if(bp){let y=.08,px=bp[0],pz=bp[1];
+  if(g.st=='fly'){const p=g.t/.9;px=lp(tv.x,px,p);pz=lp(tv.z,pz,p);y=lp(tv.y,.08,p)+Math.sin(p*Math.PI)*6}
+  else if(g.st=='bite')y+=(g.bt<1.2&&!isL()?Math.sin(g.time*30)*.03:-.15);
+  bob.position.set(px,y,pz);bob.visible=S.kit!='d'||g.st=='fly';
+  const a=lineG.geometry.attributes.position,sg=g.st=='fight'?0:g.st=='fly'?.3:.8;
+  for(let i=0;i<12;i++){const u=i/11;a.setXYZ(i,lp(tv.x,px,u),lp(tv.y,y,u)-Math.sin(u*Math.PI)*sg,lp(tv.z,pz,u))}
+  a.needsUpdate=true;lineG.visible=true;lineG.material.color.setHex(g.st=='fight'&&g.T>line()*.8?0xff4444:0xffffff);
+  if((g.st=='fight'||g.st=='bite')&&g.fish){const f=g.fish,s=.12+Math.sqrt(f.kg)*.1,o=g.st=='bite'?Math.max(0,1.5-g.bt):0;fishM.visible=true;fishM.scale.set(s*3,s,s);fishM.material.color.set(f.f.c);
+   fishM.position.set(px+(g.st=='fight'?Math.sin(g.time*3)*.8*f.dir:-o),-.12+Math.sin(g.time*9)*.04,pz);fishM.rotation.y=P.yaw}else fishM.visible=false}
+ else{bob.visible=false;lineG.visible=false;fishM.visible=false}
+ podG.visible=podB.visible=podLn.visible=!!pod.on;
+ if(pod.on){podG.position.set(pod.px,0,pod.pz);podG.rotation.y=Math.atan2(-pod.dx,-pod.dz);podG.updateMatrixWorld(true);podTip.getWorldPosition(tv);
+  const qx=pod.px+pod.dx*pod.d,qz=pod.pz+pod.dz*pod.d,qy=.08+(pod.bite?-.15+Math.sin(g.time*25)*.03:0);podB.position.set(qx,qy,qz);
+  const a=podLn.geometry.attributes.position;a.setXYZ(0,tv.x,tv.y,tv.z);a.setXYZ(1,qx,qy,qz);a.needsUpdate=true}
+ rr=rr.filter(r=>{const u=g.time-r.t0;r.m.scale.setScalar(1+u*4);r.m.material.opacity=Math.max(0,.7-u*.7);if(u>1){sc3.remove(r.m);return false}return true});
+ for(const id in others){const o=others[id],G=o.G;G.position.x=lp(G.position.x,o.x,.25);G.position.z=lp(G.position.z,o.z,.25);G.rotation.y=o.yaw;
+  if(o.f){o.fl.visible=o.ln.visible=true;o.fl.position.set(o.f[0],.1,o.f[1]);const q=o.ln.geometry.attributes.position;q.setXYZ(0,G.position.x-Math.sin(o.yaw)*1.8,2,G.position.z-Math.cos(o.yaw)*1.8);q.setXYZ(1,o.f[0],.1,o.f[1]);q.needsUpdate=true}else o.fl.visible=o.ln.visible=false}
+ rd.render(sc3,cam)}
+function move(dt){const t=(keys.ArrowLeft?1:0)-(keys.ArrowRight?1:0)+(HK.tl?1:0)-(HK.tr?1:0);P.yaw+=t*dt*1.8;S.spot=spotAt();
+ if(g.st!='idle')return;let f=(keys.KeyW?1:0)-(keys.KeyS?1:0)-JS.y,s=(keys.KeyD?1:0)-(keys.KeyA?1:0)+JS.x;f=cl(f,-1,1);s=cl(s,-1,1);if(Math.abs(f)<.08&&Math.abs(s)<.08)return;
+ const sp=4*dt,a=Math.sin(P.yaw),c=Math.cos(P.yaw),dx=(-a*f+c*s)*sp,dz=(-c*f-a*s)*sp,ok=(x,z)=>Math.abs(x)<190&&Math.abs(z)<190&&(!inW(x,z)||onPier(x,z));
+ if(ok(P.x+dx,P.z+dz)){P.x+=dx;P.z+=dz}else if(ok(P.x+dx,P.z))P.x+=dx;else if(ok(P.x,P.z+dz))P.z+=dz;P.bob+=dt*8}
+function net(dt){acc+=dt;if(acc<.1||!ws||ws.readyState!=1)return;acc=0;const b=bobPos();ws.send(JSON.stringify({t:'s',n:S.name||NAME,x:+P.x.toFixed(2),z:+P.z.toFixed(2),y:+P.yaw.toFixed(2),f:b?[+b[0].toFixed(1),+b[1].toFixed(1)]:0}))}
+function mkAv(n){const G=new T.Group(),M=c=>new T.MeshLambertMaterial({color:c}),b=new T.Mesh(new T.CylinderGeometry(.3,.35,1.1,8),M(0x3a6ea5));b.position.y=.8;G.add(b);
+ const h=new T.Mesh(new T.SphereGeometry(.22,10,8),M(0xe8b98a));h.position.y=1.6;G.add(h);const r=new T.Mesh(new T.CylinderGeometry(.01,.02,2,5),M(0x222222));r.position.set(.3,1.3,-1);r.rotation.x=-Math.PI/2+.5;G.add(r);
+ const cn=document.createElement('canvas');cn.width=256;cn.height=64;const c=cn.getContext('2d');c.fillStyle='#000a';c.fillRect(0,0,256,64);c.fillStyle='#fff';c.font='28px sans-serif';c.textAlign='center';c.fillText(n,128,42);
+ const sp=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(cn)}));sp.scale.set(2,.5,1);sp.position.y=2.2;G.add(sp);
+ const fl=new T.Mesh(new T.SphereGeometry(.12),new T.MeshBasicMaterial({color:0xff2222})),ln=new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(),new T.Vector3()]),new T.LineBasicMaterial({color:0xffffff}));
+ fl.visible=ln.visible=false;ln.frustumCulled=false;sc3.add(G,fl,ln);return{G,fl,ln,x:0,z:0,yaw:0,f:0}}
+function mpConnect(){try{ws=new WebSocket((location.protocol=='https:'?'wss://':'ws://')+location.host);ws.onmessage=e=>{let d;try{d=JSON.parse(e.data)}catch(_){return}
+ if(d.t=='s'){if(!sc3)return;let o=others[d.id];if(!o){o=others[d.id]=mkAv(d.n||'Игрок');o.G.position.set(d.x,0,d.z)}o.x=d.x;o.z=d.z;o.yaw=d.y;o.f=d.f}
+ else if(d.t=='l'&&others[d.id]){const o=others[d.id];[o.G,o.fl,o.ln].forEach(m=>sc3.remove(m));delete others[d.id]}
+ else if(d.t=='c')say(d.n+' '+d.txt)};ws.onclose=()=>{ws=null}}catch(e){ws=null}}
+const c2=$('c');c2.addEventListener('contextmenu',e=>e.preventDefault());
+c2.addEventListener('pointerdown',e=>{if(e.button==2){lookD=1;c2.setPointerCapture(e.pointerId)}});c2.addEventListener('pointerup',e=>{if(e.button==2)lookD=0});
+c2.addEventListener('pointermove',e=>{if(lookD||document.pointerLockElement==c2){P.yaw-=e.movementX*.003;P.pitch=cl(P.pitch-e.movementY*.003,-1.2,1.2)}});
+addEventListener('keydown',e=>{if(document.activeElement.tagName=='INPUT')return;keys[e.code]=1;if(e.code.startsWith('Arrow'))e.preventDefault();if(e.code=='KeyC'){document.pointerLockElement?document.exitPointerLock():c2.requestPointerLock()}});
+addEventListener('keyup',e=>{keys[e.code]=0});
+const admUI=()=>g.adm?`<div class="it"><span>Деньги</span><span><input id="am" type="number" value="10000" style="width:90px"> <button onclick="S.money+=+$('am').value||0;save();openM()">Выдать</button></span></div><div class="it"><span>Уровень</span><span><input id="al" type="number" value="10" style="width:60px"> <button onclick="S.xp=Math.pow(Math.max(1,+$('al').value)-1,2)*120;save();openM()">Задать</button></span></div><div class="it"><span>Жёсткий клёв</span><button onclick="g.hb=!g.hb;openM()">${g.hb?'ВЫКЛЮЧИТЬ':'ВКЛЮЧИТЬ'}</button></div><div class="it"><span>Всё снаряжение и приманки</span><button onclick="admAll()">Выдать</button></div>`:`<div class="it"><span>ПИН-код</span><span><input id="pin" type="password" inputmode="numeric" style="width:80px"> <button onclick="if($('pin').value=='1212'){g.adm=1;openM()}else say('Неверный пин')">ОК</button></span></div>`;
+function admAll(){for(const k in BAIT)S.inv[k]=(S.inv[k]||0)+50;S.kits={f:1,s:1,d:1};S.pod=1;S.eco=1;S.rod=2;S.reel=2;S.line=2;S.net=2;save();refreshBaits();refreshKits();openM()}
+
+function snd(f,d,type='sine',v=.08,f2){if(mute)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const t=AC.currentTime,o=AC.createOscillator(),gn=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);gn.gain.setValueAtTime(v,t);gn.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(gn);gn.connect(AC.destination);o.start();o.stop(t+d)}catch(e){}}
+const QS=[['Поймай 5 рыб',5,null,300],['Поймай 3 хищников',3,'p',400],['Поймай рыбу тяжелее 3 кг',1,'big',500],['Поймай 3 рыбы ночью',3,'night',600]];
+const g={st:'idle',pw:0,pd:1,d:0,dep:1.5,drag:40,T:0,reel:0,pump:0,t:0,fish:null,bt:0,timer:0,hour:6,wx:0,wxT:120,say:'',sayT:0,snap:0,slack:0,ed:1,gT:0,show:null,n:0,time:0};
+const lvl=()=>Math.floor(Math.sqrt(S.xp/120))+1;
+const rod=()=>GEAR.rod[1][S.rod],reel=()=>GEAR.reel[1][S.reel],line=()=>GEAR.line[1][S.line][2],cap=()=>GEAR.net[1][S.net][2];
+const X=d=>SX+d*9.75, say=(t)=>{g.say=t;g.sayT=4};
+const ldep=d=>LOCS[S.loc][1]*(.3+.7*Math.min(1,d/40));
+const stars=[...Array(60)].map(()=>[R(0,W),R(0,200),R(.5,1.5)]);
+const amb=[...Array(12)].map(()=>({x:R(200,900),y:R(260,420),v:R(-30,30)||10,s:R(6,14)}));
+const rain=[...Array(90)].map(()=>({x:R(0,W),y:R(0,H)}));
+const weeds=[...Array(40)].map(()=>[R(SX+20,W),R(14,40)]);
+function actMul(f,h){const n=h>=21||h<5,dk=(h>=5&&h<9)||(h>=18&&h<22);
+ return f.t=='d'?(h>=6&&h<20?1.2:.6):f.t=='p'?(dk?1.6:n?.7:1):(n?2:.3)}
+function weights(B=S.bait,E=g.ed){const L=LOCS[S.loc],dep=E/L[1],sp=SPOTS[S.spot][1];
+ return FISH.map(f=>{if(!f.l.includes(S.loc))return 0;const bi=f.b.indexOf(LU.includes(B)?'l':B=='y'?'c':B);if(bi<0&&!g.hb)return 0;
+ const df=dep>=f.d0&&dep<=f.d1?1:(dep>f.d0-.15&&dep<f.d1+.15?.25:0);
+ return f.r*(bi?1:2)*(g.hb?1:df)*(({o:1.3,t:1.15,k:1.2,y:1.4})[B]||1)*sp[f.t]*actMul(f,g.hour)*[1,1.15,1.3][g.wx]*(g.gT>0?1.5:1)})}
+function pickFish(B,E){const w=weights(B,E),t=w.reduce((a,b)=>a+b,0);if(t<=0)return null;let r=Math.random()*t,i=0;while((r-=w[i])>0)i++;const f=FISH[i];return{f,kg:+(f.a+(f.z-f.a)*Math.pow(Math.random(),2.5)).toFixed(2),stam:1,bu:1,bm:1,bT:0,dir:1}}
+function startTimer(){g.timer=g.hb?.8:isL()?R(3,8):R(4,12)/(g.gT>0?1.4:1)}
+function canCast(){if(S.kit=='s'&&!isL()){say('Спиннинг: нужен воблер, блесна, твистер или колебалка');return false}if(S.kit=='d'&&isL()){say('На донку — червь, опарыш, хлеб, кукуруза или бойл');return false}if((S.inv[S.bait]||0)<=0){say('Нет наживки — купи в магазине');return false}return true}
+function cast(){snd(500,.35,'sine',.05,150);const p=g.pw;g.d=Math.min(78,8+p*(rod()[2]*KITS[S.kit][2]-8));const sa=Math.sin(P.yaw),ca=Math.cos(P.yaw);g.cdx=-sa;g.cdz=-ca;g.px=P.x;g.pz=P.z;const wd=waterDist(P.x,P.z,g.cdx,g.cdz,g.d);if(wd<4){say('Закидывай в воду!');g.st='idle';return}g.d=wd;g.st='fly';g.t=0;g.ed=edf()}
+function tryBite(){const w=weights(),s=w.reduce((a,b)=>a+b,0);
+ g.ed=edf();
+ if(s<=0){startTimer();if(Math.random()<.4)say('Не клюёт… смени наживку или глубину');return}
+ let r=Math.random()*s,i=0;while((r-=w[i])>0)i++;
+ const f=FISH[i],kg=+(f.a+(f.z-f.a)*Math.pow(Math.random(),2.5)).toFixed(2);
+ g.fish={f,kg,stam:1,bu:1,bm:1,bT:0,dir:1};g.st='bite';g.bt=isL()?1.2:0;g.reel=0;snd(700,.1,'square',.05);setTimeout(()=>snd(700,.1,'square',.05),160)}
+function useBait(){if(!isL())S.inv[S.bait]--;if(g.gT>0&&0){}refreshBaits();save()}
+function hook(){if(g.st!='bite')return;const lure=isL();
+ if(g.bt<1.2&&!lure){say('Рано! Рыба испугалась');g.st='wait';startTimer();return}
+ useBait();snd(350,.15,'square',.06);g.st='fight';g.T=20;g.slack=0;g.snap=0;g.ed=edf();say('Есть! Мотай, следи за натяжением!')}
+function lose(m){say(m);snd(200,.4,'sawtooth',.06,80);if(isL()&&/Леска/.test(m)&&Math.random()<.5){S.inv[S.bait]--;refreshBaits();save()}
+ g.st='idle';g.fish=null;g.reel=0;g.T=0}
+function land(){const f=g.fish,F=f.f,kg=f.kg,price=Math.round(kg*F.p);let held=S.keep.reduce((a,b)=>a+b.kg,0);
+ const ok=held+kg<=cap();
+ if(ok)S.keep.push({n:F.n,kg,price});else say('Садок полон — рыба отпущена');
+ const rec=!S.rec[F.n]||kg>S.rec[F.n];if(rec)S.rec[F.n]=kg;
+ snd(523,.15);setTimeout(()=>snd(784,.3),150);addRip(X(2));
+ QS.forEach((q,i)=>{if(S.qd[i])return;const ok=!q[2]||(q[2]=='p'?F.t=='p':q[2]=='big'?kg>=3:(g.hour>=21||g.hour<5));if(ok){S.qp[i]++;if(S.qp[i]>=q[1]){S.qd[i]=1;S.money+=q[3];say('Задание выполнено! +'+q[3]+' ₽')}}});
+ const o=lvl();S.xp+=Math.round(10+kg*10*(1+(10-F.r)*.1));if(lvl()>o)say('Новый уровень: '+lvl()+'!');
+ if(ws&&ws.readyState==1)ws.send(JSON.stringify({t:'c',n:S.name||NAME,txt:'поймал '+F.n+' '+kg+' кг'}));g.show={F,kg,price,ok,rec};g.st='show';g.t=0;g.fish=null;save()}
+function update(dt){g.time+=dt;podUp(dt);move(dt);net(dt);rip.forEach(r=>{r.r+=dt*40;r.a-=dt*.6});rip=rip.filter(r=>r.a>0);if(Math.random()<dt*.5)addRip3(R(-70,70),R(-130,-10));g.hour=(g.hour+dt/30)%24;g.gT=Math.max(0,g.gT-dt);g.sayT-=dt;
+ g.wxT-=dt;if(g.wxT<=0){g.wxT=R(90,200);g.wx=Math.random()<.5?0:Math.random()<.6?1:2}
+ amb.forEach(a=>{a.x+=a.v*dt;if(a.x<SX+30||a.x>W-20)a.v*=-1;a.y=cl(a.y+Math.sin(g.time+a.s)*.3,WY+30,WY+PXM*(.3+.7*Math.min(1,(a.x-SX)/390))-14)});
+ if(g.st=='charge'){g.pw+=g.pd*dt*1.1;if(g.pw>1){g.pw=1;g.pd=-1}if(g.pw<0){g.pw=0;g.pd=1}}
+ else if(g.st=='fly'){g.t+=dt;if(g.t>.9){addRip(X(g.d));snd(180,.25,'sine',.08,60);g.st='wait';g.ed=edf();startTimer()}}
+ else if(g.st=='wait'){const lure=isL();
+  if(g.reel){g.d-=dt*(lure?5:4)*reel()[2];if(g.d<=1.5){g.st='idle';g.reel=0;say('Снасть выбрана');return}}
+  if(!lure||g.reel){g.timer-=dt*(g.pump&&lure?1.6:1);if(g.timer<=0)tryBite()}}
+ else if(g.st=='bite'){g.bt+=dt;if(Math.random()<dt*4)addRip(X(g.d));if(g.bt>(isL()?2.2:2.7)){say('Рыба сорвала наживку');useBait();g.st='wait';startTimer()}}
+ else if(g.st=='fight')fight(dt);
+ else if(g.st=='show'){g.t+=dt;if(g.t>2.8)g.st='idle'}}
+function fight(dt){const f=g.fish,F=f.f;f.bT-=dt;
+ if(f.bT<=0){f.bT=R(.6,2);f.bm=R(.5,1.5);f.dir=Math.random()<.5?-1:1}
+ f.bu=lp(f.bu,f.bm,dt*3);
+ const base=Math.min(100,12+8*F.pw*Math.sqrt(f.kg)),fp=base*f.bu*(.35+.65*f.stam);
+ const tg=fp*(g.reel?1:.7)+(g.reel?18:0)+(g.pump?28*rod()[3]:0),D=g.drag;
+ const Tt=tg>D?D+(tg-D)*.25:tg;
+ g.T+=(Tt-g.T)*Math.min(1,dt*5);
+ if(g.T>line()){g.snap+=dt;if(g.snap>.25)return lose('Леска порвалась!')}else g.snap=Math.max(0,g.snap-dt);
+ if(tg>D){g.d+=(tg-D)*.08*dt;if(g.time-(g.sl||0)>.12){g.sl=g.time;snd(900+Math.random()*200,.06,'sawtooth',.03)}}
+ else if(g.reel||g.pump)g.d-=((g.reel?5:0)+(g.pump?3*rod()[3]:0))*reel()[2]*(1-Math.min(.85,fp/110))*dt;
+ if(g.d>80)return lose('Рыба ушла — леска размотана');
+ const tf=.6+.25*Math.sqrt(f.kg)*F.pw;
+ f.stam=cl(f.stam-dt*(g.T>8?(.05+.12*g.T/100+(g.pump?.08:0)):-.04)/tf,0,1);
+ if(g.T<8&&!g.reel){g.slack+=dt;if(g.slack>3)return lose('Рыба сошла — слабина!')}else g.slack=Math.max(0,g.slack-dt);
+ if(g.d<=1.5){if(f.stam<.55)land();else{g.d=7;f.bu=1.6;f.bm=1.6;say('Рыба сделала рывок!')}}}
+// ---------- drawing ----------
+const mx=(a,b,t)=>`rgb(${a.map((v,i)=>Math.round(lp(v,b[i],t))).join()})`;
+function fishShape(px,py,s,dir,col,al){x.save();x.globalAlpha=al;x.translate(px,py);x.scale(dir,1);x.fillStyle=col;
+ x.beginPath();x.ellipse(0,0,s,s*.45,0,0,7);x.fill();x.beginPath();x.moveTo(-s*.8,0);x.lineTo(-s*1.5,-s*.45);x.lineTo(-s*1.5,s*.45);x.fill();
+ x.fillStyle='#000';x.beginPath();x.arc(s*.6,-s*.1,Math.max(1.5,s*.1),0,7);x.fill();x.restore()}
+function draw(){x.clearRect(0,0,W,H);render3d();if(g.wx==2){x.strokeStyle='#cfe8ff88';x.lineWidth=1;x.beginPath();rain.forEach(r=>{r.y=(r.y+9)%H;x.moveTo(r.x,r.y);x.lineTo(r.x-2,r.y+9)});x.stroke()}if(g.st=='fight')bars();
+if(g.st=='charge'){x.fillStyle='#0008';x.fillRect(330,490,300,18);x.fillStyle=`hsl(${120-g.pw*120},80%,50%)`;x.fillRect(332,492,296*g.pw,14);
+  x.fillStyle='#fff';x.font='12px sans-serif';x.fillText('Сила броска: '+Math.round(Math.min(78,8+g.pw*(rod()[2]*KITS[S.kit][2]-8)))+' м',335,486)}
+ if(g.st=='bite'&&g.bt>=1.2||g.st=='bite'&&isL()){x.fillStyle='#f33';x.font='bold 30px sans-serif';x.textAlign='center';x.fillText('ПОДСЕКАЙ!',W/2,90);x.textAlign='left'}
+ if(S.eco&&(g.st=='wait'||g.st=='bite')){const w=weights().reduce((a,b)=>a+b,0);x.fillStyle='#000a';x.fillRect(130,H-50,210,40);x.fillStyle='#7f9';x.font='13px sans-serif';x.fillText('Эхолот: дно '+ldep(g.d).toFixed(1)+' м',138,H-33);x.fillText('Активность клёва: '+Math.min(100,Math.round(w*12))+'%',138,H-17)}
+ if(g.sayT>0&&g.st!='show'){x.fillStyle='#000a';x.fillRect(W/2-250,10,500,32);x.fillStyle='#fff';x.font='16px sans-serif';x.textAlign='center';x.fillText(g.say,W/2,32);x.textAlign='left'}
+ if(g.st=='show'&&g.show){const s=g.show;x.fillStyle='#000c';x.fillRect(W/2-190,120,380,230);x.fillStyle='#fff';x.textAlign='center';
+  fishShape(W/2+10,205,30+Math.sqrt(s.kg)*14,1,s.F.c,1);x.font='bold 24px sans-serif';x.fillText(s.F.n+' — '+s.kg+' кг',W/2,290);
+  x.font='15px sans-serif';x.fillText(s.ok?'В садок · '+s.price+' ₽':'Садок полон — отпущена',W/2,315);if(s.rec){x.fillStyle='#fc4';x.fillText('Новый личный рекорд!',W/2,338)}x.textAlign='left'}}
+function mx2(a,b,t){return a.map((v,i)=>lp(v,b[i],t))}
+const mx3=mx;
+function floatAt(fx,fy){if(S.kit=='d')return;x.fillStyle='#fff';x.fillRect(fx-3,fy-12,6,12);x.fillStyle='#e22';x.fillRect(fx-3,fy-12,6,6);x.fillRect(fx-1,fy-18,2,6)}
+function bars(){const f=g.fish,mxT=110;x.fillStyle='#000a';x.fillRect(880,50,70,330);
+ x.fillStyle='#fff';x.font='11px sans-serif';x.fillText('НАТЯЖ.',886,64);
+ const sc=v=>370-cl(v/mxT,0,1)*290;
+ x.fillStyle=g.T>line()*.85?'#f44':g.T>g.drag?'#fc4':'#4c8';x.fillRect(890,sc(g.T),18,370-sc(g.T));
+ x.fillStyle='#fff';x.fillRect(886,sc(g.drag),26,2);x.fillStyle='#f44';x.fillRect(886,sc(line()),26,2);
+ x.fillStyle='#fff';x.fillText('фр.'+Math.round(g.drag),914,sc(g.drag)+4);x.fillText('обр.',914,sc(line())+4);
+ x.fillStyle='#8cf';x.fillRect(930,370-290*f.stam,10,290*f.stam);x.fillStyle='#fff';x.fillText('силы',925,380-0);
+ x.fillStyle='#000a';x.fillRect(380,500,200,26);x.fillStyle='#fff';x.font='15px sans-serif';x.fillText('Дистанция: '+Math.max(0,g.d).toFixed(1)+' м',395,519)}
+// ---------- UI ----------
+function refreshBaits(){const s=$('bs');s.innerHTML=Object.keys(BAIT).filter(k=>k!='g').map(k=>`<option value="${k}" ${S.bait==k?'selected':''}>${BAIT[k][0]} ×${S.inv[k]||0}</option>`).join('')}
+$('bs').onchange=e=>{if(g.st=='idle'||g.st=='wait'){S.bait=e.target.value;save()}else refreshBaits()};
+function tb(){const hh=Math.floor(g.hour),mm=Math.floor(g.hour%1*60),kg=S.keep.reduce((a,b)=>a+b.kg,0);
+ $('tb').innerHTML=`<span>🕐 ${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}</span><span>${WX[g.wx]}</span><span>📍 ${LOCS[S.loc][0]} (${LOCS[S.loc][1]} м)</span><span>📌 ${SPOTS[S.spot][0]}</span><span>🎣 ${KITS[S.kit][0]}</span><span>👥 ${Object.keys(others).length+1}</span><span>💰 ${S.money} ₽</span><span>Ур. ${lvl()}</span><span>🐟 ${kg.toFixed(1)}/${cap()} кг</span><span>Глубина: ${g.dep.toFixed(1)} м</span><span>Фрикцион: ${Math.round(g.drag)}</span>${g.gT>0?'<span>Прикормка ✓</span>':''}`;
+ const L={idle:'ЗАБРОС (держи)',charge:'ОТПУСТИ!',fly:'…',wait:'МОТАТЬ',bite:'ПОДСЕЧКА!',fight:'МОТАТЬ',show:'…'};$('mb').textContent=$('mb2').textContent=L[g.st]}
+function mainDown(){if(g.walkT>0)return;if(g.st=='idle'){if(!canCast())return;g.st='charge';g.pw=0;g.pd=1}else if(g.st=='bite')hook();else if(g.st=='wait'||g.st=='fight')g.reel=1}
+function mainUp(){if(g.st=='charge')cast();g.reel=0}
+const hold=(el,dn,up)=>{el.addEventListener('pointerdown',e=>{e.preventDefault();dn()});['pointerup','pointerleave','pointercancel'].forEach(ev=>el.addEventListener(ev,up))};
+hold($('mb'),mainDown,mainUp);hold($('pb'),()=>g.pump=1,()=>g.pump=0);cv.addEventListener('pointerdown',e=>{if(e.button==0&&e.pointerType!='touch')mainDown()});cv.addEventListener('pointerup',e=>{if(e.button==0&&e.pointerType!='touch')mainUp()});
+const dep=v=>{if(g.st=='idle'||g.st=='wait'){g.dep=cl(+(g.dep+v).toFixed(1),.3,LOCS[S.loc][1]-.2);if(g.st=='wait')g.ed=edf()}};
+const drg=v=>g.drag=cl(g.drag+v,10,line());
+$('sb').onclick=()=>{mute=!mute;$('sb').textContent=mute?'🔇':'🔊'};function buyEco(){if(S.money>=2500){S.money-=2500;S.eco=1;save();openM()}}
+const JS={x:0,y:0};
+(function(){const el=$('js'),kn=$('kn');let id=null,cx=0,cy=0;const R0=40;
+ const set=e=>{const dx=e.clientX-cx,dy=e.clientY-cy,l=Math.hypot(dx,dy)||1,m=Math.min(l,R0);JS.x=dx/l*m/R0;JS.y=dy/l*m/R0;kn.style.transform=`translate(${JS.x*R0}px,${JS.y*R0}px)`};
+ el.addEventListener('pointerdown',e=>{e.preventDefault();id=e.pointerId;el.setPointerCapture(id);const r=el.getBoundingClientRect();cx=r.left+r.width/2;cy=r.top+r.height/2;set(e)});
+ el.addEventListener('pointermove',e=>{if(e.pointerId==id)set(e)});
+ const end=e=>{if(e.pointerId==id){id=null;JS.x=JS.y=0;kn.style.transform=''}};el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end)})();
+let tl=null;c2.addEventListener('pointerdown',e=>{if(e.pointerType=='touch'&&!tl)tl={id:e.pointerId,x:e.clientX,y:e.clientY}});
+c2.addEventListener('pointermove',e=>{if(tl&&e.pointerId==tl.id){P.yaw-=(e.clientX-tl.x)*.006;P.pitch=cl(P.pitch-(e.clientY-tl.y)*.006,-1.2,1.2);tl.x=e.clientX;tl.y=e.clientY}});
+['pointerup','pointercancel'].forEach(v=>c2.addEventListener(v,e=>{if(tl&&e.pointerId==tl.id)tl=null}));
+hold($('mb2'),mainDown,mainUp);hold($('pb2'),()=>g.pump=1,()=>g.pump=0);$('pd2').onclick=podBtn;$('mnb').onclick=()=>document.body.classList.toggle('menu');
+let FSF=0;
+function uiMode(){document.body.classList.toggle('fs',!!document.fullscreenElement||!!FSF||(innerWidth>innerHeight&&innerHeight<520))}
+function toggleFS(){const d=document;if(d.fullscreenElement||FSF){FSF=0;try{d.fullscreenElement&&d.exitFullscreen()}catch(e){}}else{FSF=1;try{d.documentElement.requestFullscreen().then(()=>{try{screen.orientation.lock('landscape').catch(()=>{})}catch(e){}}).catch(()=>{})}catch(e){}}uiMode()}
+$('fsb').onclick=toggleFS;['resize','orientationchange','fullscreenchange'].forEach(ev=>addEventListener(ev,()=>{if(ev=='fullscreenchange'&&!document.fullscreenElement)FSF=0;uiMode()}));uiMode();
+$('lk').onclick=()=>document.pointerLockElement?document.exitPointerLock():cv.requestPointerLock();$('pdb').onclick=podBtn;
+$('ks').onchange=e=>{if(g.st!='idle'){say('Смени удочку, когда снасть смотана');refreshKits();return}S.kit=e.target.value;if(S.kit=='s'&&!isL()||S.kit=='d'&&isL()){const o=Object.keys(BAIT).find(k=>k!='g'&&(S.inv[k]||0)>0&&(S.kit=='s')==LU.includes(k));if(o)S.bait=o}refreshBaits();save()};
+$('d1').onclick=()=>dep(-.3);$('d2').onclick=()=>dep(.3);$('f1').onclick=()=>drg(-5);$('f2').onclick=()=>drg(5);
+addEventListener('keydown',e=>{if(e.repeat)return;if(e.code=='Space'){e.preventDefault();mainDown()}else if(e.key=='Shift')g.pump=1;
+ else if(e.key=='ArrowDown'){e.preventDefault();dep(.3)}else if(e.key=='ArrowUp'){e.preventDefault();dep(-.3)}else if(e.key=='p'||e.key=='P')podBtn();else if(e.key=='q'||e.key=='Q')drg(-5);else if(e.key=='e'||e.key=='E')drg(5)});
+addEventListener('keyup',e=>{if(e.code=='Space')mainUp();if(e.key=='Shift')g.pump=0});
+// modals
+let tab='shop';
+function openM(t){tab=t||tab;const tabs=`<div class="row">${[['shop','Магазин'],['net','Садок'],['loc','Места'],['q','Задания'],['rec','Рекорды'],['adm','⚙']].map(a=>`<button onclick="openM('${a[0]}')" ${a[0]==tab?'style="background:#c47f12"':''}>${a[1]}</button>`).join('')}<button onclick="closeM()">✕</button></div><div>💰 ${S.money} ₽ · Ур. ${lvl()}</div>`;let b='';
+ if(tab=='shop'){b+='<h4>Наживка</h4>'+Object.keys(BAIT).map(k=>`<div class="it"><span>${BAIT[k][0]} ×${BAIT[k][2]} <small>(есть ${S.inv[k]||0})</small></span><button onclick="buy('${k}')">${BAIT[k][1]} ₽</button></div>`).join('')+'<h4>Снаряжение</h4>';
+  for(const k in GEAR){const cur=GEAR[k][1][S[k]],nx=GEAR[k][1][S[k]+1];b+=`<div class="it"><span>${GEAR[k][0]}: ${cur[0]}</span>${nx?`<button onclick="up('${k}')">${nx[0]} — ${nx[1]} ₽</button>`:'<small>макс.</small>'}</div>`}b+=Object.keys(KITS).filter(k=>k!='f').map(k=>`<div class="it"><span>${KITS[k][0]}</span>${S.kits[k]?'<small>есть</small>':`<button onclick="buyKit('${k}')">${KITS[k][1]} ₽</button>`}</div>`).join('')+`<div class="it"><span>Род-под <small>(вторая удочка, звонок при поклёвке)</small></span>${S.pod?'<small>есть</small>':'<button onclick="buyPod()">2500 ₽</button>'}</div>`;
+  b+=`<div class="it"><span>Эхолот <small>(глубина и активность клёва)</small></span>${S.eco?'<small>куплен</small>':'<button onclick="buyEco()">2500 ₽</button>'}</div>`}
+ if(tab=='net'){const tot=S.keep.reduce((a,b)=>a+b.price,0);b+=S.keep.length?S.keep.map(f=>`<div class="it"><span>${f.n} ${f.kg} кг</span><span>${f.price} ₽</span></div>`).join('')+`<div class="row"><button onclick="sell()">Продать всё: ${tot} ₽</button></div>`:'<p>Садок пуст</p>'}
+ if(tab=='loc')b+=LOCS.map((l,i)=>`<div class="it"><span>${l[0]} <small>глубина ${l[1]} м · ур. ${l[2]}</small></span>${lvl()<l[2]?'<small>закрыто</small>':`<button onclick="goLoc(${i})" ${S.loc==i?'disabled':''}>${S.loc==i?'Здесь':'Ехать'}</button>`}</div>`).join('');
+ if(tab=='rec')b+=FISH.map(f=>`<div class="it"><span>${f.n}</span><span>${S.rec[f.n]?S.rec[f.n]+' кг':'—'}</span></div>`).join('');
+ if(tab=='adm')b+=admUI();
+ if(tab=='q')b+=QS.map((q,i)=>`<div class="it"><span>${q[0]}</span><span>${S.qd[i]?'✅':S.qp[i]+'/'+q[1]+' · '+q[3]+' ₽'}</span></div>`).join('');
+ $('mi').innerHTML=tabs+b;$('m').style.display='flex'}
+function closeM(){$('m').style.display='none'}
+function buy(k){const p=BAIT[k];if(S.money<p[1])return;S.money-=p[1];if(k=='g'){g.gT=300;S.inv.g=0;say('Прикормка брошена!')}else S.inv[k]=(S.inv[k]||0)+p[2];refreshBaits();save();openM()}
+function up(k){const nx=GEAR[k][1][S[k]+1];if(S.money<nx[1])return;S.money-=nx[1];S[k]++;g.drag=Math.min(g.drag,line());save();openM()}
+function sell(){S.money+=S.keep.reduce((a,b)=>a+b.price,0);S.keep=[];save();openM()}
+function goLoc(i){if(g.st!='idle'){say('Сначала смотай снасть');return}S.loc=i;g.dep=Math.min(g.dep,LOCS[i][1]-.2);g.d=0;save();closeM();say('Место: '+LOCS[i][0])}
+init3d();mpConnect();$('nm').value=S.name||'';$('nm').onchange=e=>{S.name=e.target.value.slice(0,14);save()};refreshKits();refreshBaits();say('Держи ЗАБРОС (Пробел), отпусти — бросок');
+let last=0,fr=0;function loop(t){const dt=Math.min(.05,(t-last)/1000);last=t;update(dt);draw();if(fr++%6==0)tb();requestAnimationFrame(loop)}
+requestAnimationFrame(loop);
+</script></body></html>
